@@ -6,7 +6,7 @@ import {
 } from '../controllers/documentController.js';
 import { protect } from '../middleware/auth.js';
 import { upload } from '../middleware/multer.js';
-import { uploadLimiter, apiLimiter } from '../middleware/rateLimiter.js';
+import { uploadLimiter, apiLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -16,8 +16,8 @@ router.patch('/:id/sharing', protect, updateDocumentSharing);
 router.delete('/:id', protect, deleteDocument);
 router.post('/government/fetch', protect, apiLimiter, fetchGovernmentDocument);
 
-router.post('/:docId/download/request', apiLimiter, requestDownload);
-router.post('/:docId/download/verify', apiLimiter, verifyAndDownload);
+router.post('/:docId/download/request', otpLimiter, requestDownload);
+router.post('/:docId/download/verify', otpLimiter, verifyAndDownload);
 
 router.post('/:docId/expiry-link', protect, createExpiryLink);
 router.get('/access/:token', accessExpiryLink);
