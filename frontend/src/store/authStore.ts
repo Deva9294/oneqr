@@ -37,12 +37,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'oneqr-auth',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-        token: state.token,
-      }),
+      storage: createJSONStorage(() => localStorage) ,
     }
   )
 );
