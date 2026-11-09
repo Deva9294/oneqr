@@ -118,13 +118,13 @@ export default function GovFetchPage() {
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-blue-500"
                   placeholder="Enter 6-digit OTP"
                 />
-                <p className="text-slate-500 text-xs mt-1">Request OTP on your registered mobile via UIDAI.</p>
+                <p className="text-slate-500 text-xs mt-1">UIDAI OTP integration is not connected yet. Do not enter an OTP here until the authorized provider is enabled.</p>
               </div>
             )}
 
             <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-3">
               <p className="text-blue-400 text-xs">
-                <strong>Note:</strong> In production, this connects to DigiLocker, UIDAI, NSDL, or Parivahan APIs via authorized partners.
+                <strong>Note:</strong> Government API fetching is currently disabled. OneQR will not show demo identity data as verified. Upload your document manually until an authorized provider integration is configured.
               </p>
             </div>
 

@@ -1,78 +1,53 @@
-# OneQR Database Setup Guide
+# OneQR Database Setup
 
-## Current Status
+## Configure MongoDB Atlas
 
-Your backend server is running on **port 5001** in LIMITED MODE because MongoDB is not connected yet.
+1. Create or open your MongoDB Atlas project.
+2. Create a database user with a strong, unique password.
+3. In Network Access, allow only the outbound IP addresses required by your hosting provider. Avoid permanent `0.0.0.0/0` access unless you understand the risk and have compensating controls.
+4. Copy the Atlas connection string and set it as `MONGO_URI` in your hosting provider's environment settings.
+5. Replace the username, password, cluster host and database name with your own values.
+6. Keep credentials out of source code, screenshots, logs and Git history.
 
-## The Problem
+## Local development
 
-Your MongoDB Atlas cluster blocks connections from your current IP address.
-- **Your IP Address:** `157.34.31.177`
-- **Error:** `Could not connect to any servers in your MongoDB Atlas cluster`
+Set:
 
-## Fix (Takes 2 Minutes)
+```env
+MONGO_URI_LOCAL=mongodb://127.0.0.1:27017/oneqr
+JWT_SECRET=use-a-long-random-secret
+CLIENT_URL=http://localhost:3000
+```
 
-### Step 1: Log into MongoDB Atlas
-1. Go to https://cloud.mongodb.com
-2. Log in with your account (ravibhalavi06121998)
+Run backend:
 
-### Step 2: Open Network Access
-1. Click your cluster name (Cluster0)
-2. In the left sidebar, click **"Network Access"**
-3. Click the green button **"+ ADD IP ADDRESS"**
-
-### Step 3: Add Your IP
-1. Select **"Add Current IP Address"** OR
-2. Enter this IP manually: **`157.34.31.177`**
-3. Optionally add a comment: "Home/Office PC"
-4. Click **"Confirm"**
-
-### Step 4: Wait 1-2 Minutes
-Atlas takes a moment to apply the IP whitelist.
-
-### Step 5: Restart the Server
 ```bash
-cd D:\oneqr\backend
-node src/server.js
+cd backend
+npm install
+npm run dev
 ```
 
-You should see:
-```
-Trying MongoDB Atlas...
-MongoDB Atlas Connected: ac-lfipczu-shard-00-00.znymtnk.mongodb.net
-OneQR Server running on port 5001
-```
+Run frontend in another terminal:
 
-## Alternative: Use Local MongoDB
-
-If you prefer local development instead of Atlas:
-
-1. Download MongoDB Community Server: https://www.mongodb.com/try/download/community
-2. Install with default settings
-3. Make sure `mongod` is running on port 27017
-4. The app will auto-connect to `mongodb://127.0.0.1:27017/oneqr`
-
-## What's Already Fixed
-
-- [x] Server starts without crashing when DB is offline (LIMITED MODE)
-- [x] Clear error messages tell you exactly what to do
-- [x] Port changed from 5000 to 5001 (5000 was blocked by another process)
-- [x] Frontend `.env.local` created with correct API URL
-- [x] All backend models, controllers, and routes validated - zero syntax errors
-- [x] Frontend builds successfully
-
-## Testing After DB Connection
-
-Once connected, test these endpoints:
 ```bash
-# Health check
-curl http://localhost:5001/api/health
-
-# Public stats (DB connected)
-curl http://localhost:5001/api/public/stats
-
-# Register a user
-curl -X POST http://localhost:5001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test","email":"test@example.com","phone":"+919999999999","password":"password123","documentPin":"1234","upiId":"test@upi"}'
+cd frontend
+npm install
+npm run dev
 ```
+
+## Health checks
+
+- `GET /api/health` reports process and database readiness.
+- `GET /api/public/stats` requires a working database.
+
+A successful process start does not mean the database is connected. Production must have a valid `MONGO_URI`.
+
+## Security incident response
+
+If a database password, API key or token was ever committed:
+1. Rotate/revoke it immediately in the provider dashboard.
+2. Update the hosting environment variable.
+3. Remove the secret from all Git history and cached artifacts.
+4. Review provider access logs for unexpected activity.
+
+Removing a secret from the latest file does not invalidate the old credential or erase it from Git history.

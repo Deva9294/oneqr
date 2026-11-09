@@ -35,7 +35,7 @@ export default function OrdersPage() {
       await api.post('/orders', {
         orderType: product.type,
         quantity: product.qty,
-        shippingAddress: address,
+        shippingAddress: address,\n        paymentMethod: 'cod',
       });
       toast.success('Order placed successfully!');
       router.push('/dashboard');
@@ -201,7 +201,7 @@ export default function OrdersPage() {
               <p className="text-blue-400 text-sm font-medium mb-2 flex items-center gap-2">
                 <CreditCard className="w-4 h-4" /> Payment Method
               </p>
-              <p className="text-slate-400 text-xs">Pay via UPI, Card, or Cash on Delivery. You will be redirected to payment after placing order.</p>
+              <p className="text-slate-400 text-xs">Cash on Delivery is currently available. Online payment is not enabled for QR product orders yet.</p>
             </div>
 
             <div className="flex gap-3">
@@ -213,7 +213,7 @@ export default function OrdersPage() {
                 disabled={placing}
                 className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 text-slate-900 font-bold py-3 rounded-xl"
               >
-                {placing ? 'Placing Order...' : `Pay ₹${total}`}
+                {placing ? 'Placing Order...' : `Place COD Order · ₹${total}`}
               </button>
             </div>
           </div>

@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/utils';
 import {
   FileText, Shield, Download, Eye, Trash2, Upload, QrCode,
   CreditCard, BarChart3, ShoppingBag, LogOut, User, Smartphone,
-  Lock, Clock, TrendingUp, MapPin
+  Lock, Clock, TrendingUp, MapPin, Share2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ interface Document {
   fileType: string;
   downloadCount: number;
   requiresPin: boolean;
+  isPublic: boolean;
   createdAt: string;
 }
 
@@ -60,6 +61,19 @@ export default function DashboardPage() {
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShare = async (doc: Document) => {
+    const next = !doc.isPublic;
+    try {
+      const { data } = await api.patch(`/documents/${doc._id}/sharing`, { isPublic: next });
+      setDocuments((current) => current.map((item) => item._id === doc._id
+        ? { ...item, isPublic: data.document.isPublic, requiresPin: data.document.requiresPin }
+        : item));
+      toast.success(next ? 'Document shared on your QR profile (PIN protected)' : 'Document sharing disabled');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Could not update sharing');
     }
   };
 
@@ -199,7 +213,7 @@ export default function DashboardPage() {
                     <th className="pb-3">Type</th>
                     <th className="pb-3">Uploaded</th>
                     <th className="pb-3">Downloads</th>
-                    <th className="pb-3">Security</th>
+                    <th className="pb-3">Security / Sharing</th>
                     <th className="pb-3 text-right pr-2">Actions</th>
                   </tr>
                 </thead>
@@ -234,9 +248,15 @@ export default function DashboardPage() {
                         ) : (
                           <span className="text-slate-500 text-xs">Open</span>
                         )}
+                        {doc.isPublic && <span className="ml-2 text-emerald-400 text-xs">Shared</span>}
                       </td>
                       <td className="py-3 text-right pr-2">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-2">
+                          {doc.category === 'basic' && (
+                            <button onClick={() => handleShare(doc)} title={doc.isPublic ? 'Disable QR sharing' : 'Share on QR profile'} className={doc.isPublic ? 'text-emerald-400 hover:text-emerald-300 p-1' : 'text-slate-400 hover:text-white p-1'}>
+                              <Share2 className="w-4 h-4" />
+                            </button>
+                          )}
                           <button onClick={() => handleDelete(doc._id)} className="text-red-400 hover:text-red-300 p-1">
                             <Trash2 className="w-4 h-4" />
                           </button>
