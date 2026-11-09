@@ -12,7 +12,7 @@ export const handleScan = catchAsync(async (req, res) => {
   const parser = new UAParser(userAgent);
   const deviceInfo = parser.getResult();
   const user = await User.findOne({ qrCode, isActive: true }).select(
-    'name avatar upiId upiDeepLink qrCode qrCodeImage profiles activeProfile bloodGroup emergencyContacts medicalConditions'
+    'name avatar upiId upiDeepLink qrCode qrCodeImage profiles activeProfile'
   );
   if (!user) throw new AppError('Invalid QR code', 404);
 
@@ -35,9 +35,6 @@ export const handleScan = catchAsync(async (req, res) => {
     profile: {
       name: user.name,
       avatar: user.avatar,
-      bloodGroup: user.bloodGroup,
-      emergencyContacts: user.emergencyContacts,
-      medicalConditions: user.medicalConditions,
       upiId: user.upiId,
       upiDeepLink: user.upiDeepLink,
       activeProfile: user.activeProfile,
