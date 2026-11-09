@@ -8,7 +8,7 @@ export const protect = catchAsync(async (req, res, next) => {
   const token = header.startsWith('Bearer ') ? header.slice(7) : req.cookies?.token;
   if (!token) throw new AppError('Not authorized, no token', 401);
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  const user = await User.findById(decoded.id).select('+aadhaarNumber +panNumber +dlNumber');
+  const user = await User.findById(decoded.id);
   if (!user || !user.isActive) throw new AppError('User not found or inactive', 401);
   req.user = user;
   next();
