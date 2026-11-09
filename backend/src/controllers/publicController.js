@@ -5,16 +5,15 @@ import { catchAsync } from '../utils/catchAsync.js';
 
 export const getPublicDocuments = catchAsync(async (req, res) => {
   const { qrCode } = req.params;
+  const user = await User.findOne({ qrCode, isActive: true }).select('_id');
+  if (!user) return res.status(404).json({ success: false, documents: [] });
 
-  const user = await User.findOne({ qrCode, isActive: true });
-  if (!user) {
-    return res.json({ success: true, documents: [] });
-  }
-
+  // Documents are private by default. Only an owner-explicitly-shared document
+  // can appear in the public QR listing; download authorization is still enforced.
   const documents = await Document.find({
     user: user._id,
     isActive: true,
-    category: { $in: ['basic', 'government'] },
+    isPublic: true,
   }).select('title type category requiresPin createdAt');
 
   res.json({ success: true, documents });
@@ -22,9 +21,8 @@ export const getPublicDocuments = catchAsync(async (req, res) => {
 
 export const getPublicProfile = catchAsync(async (req, res) => {
   const { qrCode } = req.params;
-
   const user = await User.findOne({ qrCode, isActive: true }).select(
-    '-password -documentPin -aadhaarNumber -panNumber -dlNumber -email -phone'
+    'name avatar upiId upiDeepLink qrCode profiles activeProfile'
   );
 
   if (!user) {
@@ -38,12 +36,12 @@ export const getPublicProfile = catchAsync(async (req, res) => {
     profile: {
       name: user.name,
       avatar: user.avatar,
-      bloodGroup: user.bloodGroup,
-      emergencyContacts: user.emergencyContacts,
-      medicalConditions: user.medicalConditions,
+      upiId: user.upiId,
+      upiDeepLink: user.upiDeepLink,
       activeProfile: user.activeProfile,
       businessName: activeProfile?.businessName,
-      gstNumber: activeProfile?.gstNumber,
+      // GST is business information; show only on the explicitly active business profile.
+      gstNumber: user.activeProfile === 'business' ? activeProfile?.gstNumber : undefined,
     },
   });
 });
