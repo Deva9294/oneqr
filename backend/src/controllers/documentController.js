@@ -14,6 +14,20 @@ import path from 'path';
 const cloudinaryReady = () => Boolean(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 const hashOtp = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
+const createPrivateDownloadUrl = (doc) => {
+  if (doc.filePublicId && cloudinaryReady()) {
+    const format = doc.fileFormat || (doc.fileType === 'pdf' ? 'pdf' : doc.fileType === 'zip' ? 'zip' : 'jpg');
+    return cloudinary.utils.private_download_url(doc.filePublicId, format, {
+      resource_type: doc.fileType === 'image' ? 'image' : 'raw',
+      type: 'authenticated',
+      expires_at: Math.floor(Date.now() / 1000) + 300,
+      attachment: true,
+    });
+  }
+  if (process.env.NODE_ENV === 'production') throw new AppError('Private document delivery is not configured', 503);
+  return doc.fileUrl;
+}
+
 export const uploadDocument = catchAsync(async (req, res) => {
   const { title, type, category } = req.body;
   if (!req.file) throw new AppError('Please upload a file', 400);
@@ -21,7 +35,7 @@ export const uploadDocument = catchAsync(async (req, res) => {
   if (process.env.NODE_ENV === 'production' && !cloudinaryReady()) throw new AppError('Secure cloud document storage is not configured', 503);
   const fileType = req.file.mimetype === 'application/pdf' ? 'pdf' : req.file.mimetype.includes('zip') ? 'zip' : 'image';
   let fileUrl = '';
-  let filePublicId = '';
+  let filePublicId = '';\n  let fileFormat = path.extname(req.file.originalname).slice(1).toLowerCase();
   if (cloudinaryReady()) {
     const uploaded = await cloudinary.uploader.upload(req.file.path, {
       folder: `oneqr/documents/${req.user._id}`,
@@ -29,7 +43,7 @@ export const uploadDocument = catchAsync(async (req, res) => {
       type: 'authenticated',
     });
     fileUrl = uploaded.secure_url;
-    filePublicId = uploaded.public_id;
+    filePublicId = uploaded.public_id;\n    fileFormat = uploaded.format || fileFormat;
   } else {
     const baseUrl = process.env.API_BASE_URL;
     if (!baseUrl) throw new AppError('Set API_BASE_URL or configure Cloudinary storage', 503);
@@ -39,7 +53,7 @@ export const uploadDocument = catchAsync(async (req, res) => {
   const doc = await Document.create({
     user: req.user._id, title: String(title).trim().slice(0, 120), type,
     category: category || (sensitive ? 'government' : 'basic'),
-    fileUrl, filePublicId, fileType, fileSize: req.file.size,
+    fileUrl, filePublicId, fileType, fileFormat, fileSize: req.file.size,
     requiresPin: sensitive, isPublic: false,
   });
   res.status(201).json({ success: true, document: doc });
@@ -153,7 +167,7 @@ export const verifyAndDownload = catchAsync(async (req, res) => {
   await ScanLog.create({ user: doc.user._id, qrCode: doc.user.qrCode, type: 'document_view', ipAddress: req.ip, userAgent: req.headers['user-agent'] });
   await Document.findByIdAndUpdate(docId, { $inc: { downloadCount: 1 } });
   await User.findByIdAndUpdate(doc.user._id, { $inc: { totalDownloads: 1 } });
-  res.json({ success: true, fileUrl: doc.fileUrl, title: doc.title, type: doc.fileType, downloadedAt: new Date(), scannerName: String(scannerName || 'Anonymous').slice(0, 80) });
+  res.json({ success: true, fileUrl: createPrivateDownloadUrl(doc), title: doc.title, type: doc.fileType, downloadedAt: new Date(), scannerName: String(scannerName || 'Anonymous').slice(0, 80) });
 });
 
 export const createExpiryLink = catchAsync(async (req, res) => {
@@ -171,9 +185,9 @@ export const accessExpiryLink = catchAsync(async (req, res) => {
     { token: req.params.token, isUsed: false, expiresAt: { $gt: new Date() } },
     { $set: { isUsed: true, usedAt: new Date(), usedByIp: req.ip } },
     { new: true }
-  ).populate('document', 'title fileUrl fileType isActive requiresPin isPublic');
+  ).populate('document', 'title fileUrl filePublicId fileFormat fileType isActive requiresPin isPublic');
   if (!link || !link.document?.isActive || !link.document?.isPublic) throw new AppError('Link expired or already used', 410);
   if (link.document.requiresPin) throw new AppError('This document requires PIN/OTP verification; use the secure download flow.', 403);
   await Document.findByIdAndUpdate(link.document._id, { hasExpiryLink: false, expiryLinkToken: null, expiryLinkExpiresAt: null });
-  res.json({ success: true, document: { title: link.document.title, fileUrl: link.document.fileUrl, fileType: link.document.fileType } });
+  res.json({ success: true, document: { title: link.document.title, fileUrl: createPrivateDownloadUrl(link.document), fileType: link.document.fileType } });
 });
