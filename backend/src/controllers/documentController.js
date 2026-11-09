@@ -35,7 +35,8 @@ export const uploadDocument = catchAsync(async (req, res) => {
   if (process.env.NODE_ENV === 'production' && !cloudinaryReady()) throw new AppError('Secure cloud document storage is not configured', 503);
   const fileType = req.file.mimetype === 'application/pdf' ? 'pdf' : req.file.mimetype.includes('zip') ? 'zip' : 'image';
   let fileUrl = '';
-  let filePublicId = '';\n  let fileFormat = path.extname(req.file.originalname).slice(1).toLowerCase();
+  let filePublicId = '';
+  let fileFormat = path.extname(req.file.originalname).slice(1).toLowerCase();
   if (cloudinaryReady()) {
     const uploaded = await cloudinary.uploader.upload(req.file.path, {
       folder: `oneqr/documents/${req.user._id}`,
@@ -43,7 +44,8 @@ export const uploadDocument = catchAsync(async (req, res) => {
       type: 'authenticated',
     });
     fileUrl = uploaded.secure_url;
-    filePublicId = uploaded.public_id;\n    fileFormat = uploaded.format || fileFormat;
+    filePublicId = uploaded.public_id;
+    fileFormat = uploaded.format || fileFormat;
   } else {
     const baseUrl = process.env.API_BASE_URL;
     if (!baseUrl) throw new AppError('Set API_BASE_URL or configure Cloudinary storage', 503);
