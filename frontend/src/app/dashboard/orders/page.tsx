@@ -35,7 +35,8 @@ export default function OrdersPage() {
       await api.post('/orders', {
         orderType: product.type,
         quantity: product.qty,
-        shippingAddress: address,\n        paymentMethod: 'cod',
+        shippingAddress: address,
+        paymentMethod: 'cod',
       });
       toast.success('Order placed successfully!');
       router.push('/dashboard');
